@@ -1,0 +1,29 @@
+{
+  "type": "panel",
+  "name": "EChart",
+  "id": "grafana-echart-panel",
+
+  "info": {
+    "description": "EChart panel for grafana",
+    "author": {
+      "name": "GBrian",
+      "url": "https://github.com/gbrian"
+    },
+    "keywords": ["echart", "panel"],
+    "logos": {
+      "small": "src/img/echart_logo_small.png",
+      "large": "src/img/echart_logo_large.png"
+    },
+    "links": [
+      {"name": "Project site", "url": "https://github.com/gbrian/grafana-echart-panel"},
+      {"name": "MIT License", "url": "https://github.com/grafana/echart-panel/blob/master/LICENSE"}
+    ],
+    "version": "1.0.0",
+    "updated": "2018-11-10"
+  },
+
+  "dependencies": {
+    "grafanaVersion": "5.3",
+    "plugins": [ ]
+  }
+}

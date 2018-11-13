@@ -1,0 +1,283 @@
+@import 'base.css';
+
+.echart-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.echart-panel--legend-right {
+  flex-direction: row;
+}
+
+.echart-panel--legend-right .echart-legend {
+  flex: 0 1 10px;
+  height: 100%;
+}
+
+_:-ms-fullscreen, :root .echart-panel--legend-right .echart-legend {
+  flex: 0 1 200px;
+}
+
+.echart-panel--legend-right .echart-legend-series {
+  display: block;
+  padding-left: 0px;
+}
+
+.echart-panel--legend-right .echart-legend-table .echart-legend-series {
+  display: table-row;
+}
+
+.echart-legend__container {
+  height: 100%;
+}
+
+.echart-panel__chart {
+  position: relative;
+  cursor: crosshair;
+  flex-grow: 1;
+  top: 10px;
+}
+
+.datapoints-warning {
+  pointer: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 10;
+  margin-top: -50px;
+  margin-left: -100px;
+  width: 200px;
+  text-align: center;
+  cursor: auto;
+  padding: 10px;
+}
+
+.echart-legend {
+  flex: 0 1 auto;
+  margin: 0 1rem;
+  text-align: center;
+  padding-top: 6px;
+  position: relative;
+}
+
+.echart-legend .popover-content {
+  padding: 0;
+}
+
+.echart-legend-icon {
+  position: relative;
+  padding-right: 4px;
+  top: 1px;
+}
+
+.echart-legend-icon,
+.echart-legend-alias,
+.echart-legend-value {
+  cursor: pointer;
+  float: left;
+  white-space: nowrap;
+  font-size: 85%;
+  text-align: left;
+  color: 52545c;
+}
+
+.echart-legend-icon.current::before {
+  content: "Current: ";
+}
+
+.echart-legend-icon.max::before {
+  content: "Max: ";
+}
+
+.echart-legend-icon.min::before {
+  content: "Min: ";
+}
+
+.echart-legend-icon.total::before {
+  content: "Total: ";
+}
+
+.echart-legend-icon.avg::before {
+  content: "Avg: ";
+}
+
+.echart-legend-alias.current::before {
+  content: "Current: ";
+}
+
+.echart-legend-alias.max::before {
+  content: "Max: ";
+}
+
+.echart-legend-alias.min::before {
+  content: "Min: ";
+}
+
+.echart-legend-alias.total::before {
+  content: "Total: ";
+}
+
+.echart-legend-alias.avg::before {
+  content: "Avg: ";
+}
+
+.echart-legend-value.current::before {
+  content: "Current: ";
+}
+
+.echart-legend-value.max::before {
+  content: "Max: ";
+}
+
+.echart-legend-value.min::before {
+  content: "Min: ";
+}
+
+.echart-legend-value.total::before {
+  content: "Total: ";
+}
+
+.echart-legend-value.avg::before {
+  content: "Avg: ";
+}
+
+.echart-legend-icon .fa {
+  font-size: 135%;
+  position: relative;
+  top: 1px;
+}
+
+.echart-legend-series {
+  float: left;
+  white-space: nowrap;
+  padding-left: 10px;
+}
+
+.echart-legend-series--right-y {
+  float: right;
+}
+
+.echart-legend-value {
+  padding-left: 6px;
+}
+
+.echart-legend-table tbody {
+  display: block;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  padding-bottom: 1px;
+  padding-right: 5px;
+}
+
+.echart-legend-table .echart-legend-series {
+  display: table-row;
+  float: none;
+  padding-left: 0;
+}
+
+.echart-legend-table .echart-legend-series--right-y {
+  float: none;
+}
+
+.echart-legend-table .echart-legend-series--right-y .echart-legend-alias::after {
+  content: "(right-y)";
+  padding: 0 5px;
+  color: #767980;
+}
+
+.echart-legend-table td,
+.echart-legend-alias,
+.echart-legend-icon,
+.echart-legend-value {
+  float: none;
+  display: table-cell;
+  white-space: nowrap;
+  padding: 2px 10px;
+  text-align: right;
+}
+
+.echart-legend-table .echart-legend-icon {
+  width: 5px;
+  padding: 0;
+  top: 0;
+}
+
+.echart-legend-table .echart-legend-icon .fa {
+  top: 4px;
+}
+
+.echart-legend-table .echart-legend-value {
+  padding-left: 15px;
+}
+
+.echart-legend-table .echart-legend-alias {
+  padding-left: 7px;
+  text-align: left;
+  width: 95%;
+  max-width: 650px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.echart-legend-table .echart-legend-series:nth-child(odd) {
+  background: #dde4ed;
+}
+
+.echart-legend-table .echart-legend-value.current::before {
+  content: "";
+}
+
+.echart-legend-table .echart-legend-value.max::before {
+  content: "";
+}
+
+.echart-legend-table .echart-legend-value.min::before {
+  content: "";
+}
+
+.echart-legend-table .echart-legend-value.total::before {
+  content: "";
+}
+
+.echart-legend-table .echart-legend-value.avg::before {
+  content: "";
+}
+
+.echart-legend-table th {
+  text-align: right;
+  padding: 0px 10px 1px 0;
+  font-weight: bold;
+  color: #61c2f2;
+  font-size: 85%;
+  white-space: nowrap;
+}
+
+.echart-legend-series-hidden .echart-legend-value,
+.echart-legend-series-hidden .echart-legend-alias {
+  color: #acb6bf;
+}
+
+.echart-tooltip {
+  white-space: nowrap;
+  font-size: 12px;
+  background-color: #dde4ed;
+  color: #35373f;
+}
+
+.echart-tooltip .echart-tooltip-time {
+  text-align: center;
+  position: relative;
+  top: -3px;
+  padding: 0.2rem;
+  font-weight: bold;
+  color: #35373f;
+}
+
+.echart-tooltip .echart-tooltip-value {
+  display: table-cell;
+  font-weight: bold;
+  padding-left: 15px;
+  text-align: right;
+}
