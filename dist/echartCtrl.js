@@ -1,9 +1,9 @@
 'use strict';
 
-System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/time_series', './rendering', './optionsTab', './jsonPreviewCtrl'], function (_export, _context) {
+System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/time_series', './rendering', './optionsTab', './jsonPreviewCtrl', './htmlTab'], function (_export, _context) {
   "use strict";
 
-  var MetricsPanelCtrl, _, kbn, TimeSeries, EChartRendering, OptionsTabCtrl, JSONPreviewCtrl, _createClass, EChartCtrl;
+  var MetricsPanelCtrl, _, kbn, TimeSeries, EChartRendering, OptionsTabCtrl, JSONPreviewCtrl, HTMLTabCtrl, _createClass, EChartCtrl;
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -50,6 +50,8 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
       OptionsTabCtrl = _optionsTab.default;
     }, function (_jsonPreviewCtrl) {
       JSONPreviewCtrl = _jsonPreviewCtrl.default;
+    }, function (_htmlTab) {
+      HTMLTabCtrl = _htmlTab.default;
     }],
     execute: function () {
       _createClass = function () {
@@ -83,11 +85,6 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           _this.templateSrv = templateSrv;
 
           var panelDefaults = {
-            pieType: 'pie',
-            legend: {
-              show: true, // disable/enable legend
-              values: true
-            },
             links: [],
             datasource: null,
             maxDataPoints: 3,
@@ -105,11 +102,11 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
             combine: {
               threshold: 0.0,
               label: 'Others'
-            }
+            },
+            html: ['<div class="echart-panel__chart"></div>', '<script> $("#$__panelId").one("init-markup", function(ev, data){}) </script>', '<script> $("#$__panelId").one("echart-changed", function(ev, data){}) </script>'].join('\r\n')
           };
 
           _.defaults(_this.panel, panelDefaults);
-          _.defaults(_this.panel.legend, panelDefaults.legend);
 
           _this.events.on('render', _this.onRender.bind(_this));
           _this.events.on('data-received', _this.onDataReceived.bind(_this));
@@ -129,10 +126,11 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
             this.addEditorTab('Data preview', JSONPreviewCtrl.buildDirective(function () {
               return _this2.data;
             }), 2);
-            this.addEditorTab('Chart', OptionsTabCtrl.buildDirective(), 3);
+            this.addEditorTab('HTML', HTMLTabCtrl.buildDirective(), 3);
+            this.addEditorTab('Chart', OptionsTabCtrl.buildDirective(), 4);
             this.addEditorTab('Options preview', JSONPreviewCtrl.buildDirective(function () {
               return _this2.getChartOptions();
-            }), 4);
+            }), 5);
             this.addEditorTab('Examples', 'public/plugins/grafana-echart-panel/examples.html');
             this.unitFormats = kbn.getUnitFormats();
           }
@@ -161,9 +159,15 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
             // this.data = this.parseSeries(this.series);
           }
         }, {
+          key: 'getChartMarkup',
+          value: function getChartMarkup() {
+            return this.replaceVariables(this.panel.html);
+          }
+        }, {
           key: 'getChartOptions',
           value: function getChartOptions() {
-            var fnc = new Function('data', 'return ' + this.panel.eoptions + ';');
+            var eoptions = this.replaceVariables(this.panel.eoptions);
+            var fnc = new Function('data', 'return ' + eoptions + ';');
             return fnc(this.data);
           }
         }, {
@@ -260,6 +264,8 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           key: 'link',
           value: function link(scope, elem, attrs, ctrl) {
             ctrl.elem = elem;
+            // Ensure we have a unique id
+            elem.attr('id', this.getPanelIdCSS());
             this.rendering = new EChartRendering(scope, elem, attrs, ctrl);
           }
         }, {
@@ -285,6 +291,33 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
             if (isIE11 && this.panel.legendType === 'Right side' && !this.panel.legend.sideWidth) {
               this.panel.legend.sideWidth = 150;
             }
+          }
+        }, {
+          key: 'getPanelIdCSS',
+          value: function getPanelIdCSS() {
+            return 'panel_markup_' + this.panel.id;
+          }
+        }, {
+          key: 'internalReplace',
+          value: function internalReplace(text) {
+            var _this4 = this;
+
+            return text.replace(/\$__[a-zA-Z0-9_]+/g, function (v) {
+              switch (v) {
+                case "$__panelId":
+                  return _this4.getPanelIdCSS();
+              }
+              return v;
+            });
+          }
+        }, {
+          key: 'replaceVariables',
+          value: function replaceVariables(text) {
+            if (text) {
+              text = this.internalReplace(text);
+              text = this.templateSrv.replace(text, this.panel.scopedVars);
+            }
+            return text;
           }
         }]);
 

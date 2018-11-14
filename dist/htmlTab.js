@@ -3,7 +3,7 @@
 System.register(['./aceEditorCtrl'], function (_export, _context) {
   "use strict";
 
-  var AceEditorCtrl, _createClass, OptionsTabCtrl;
+  var AceEditorCtrl, _createClass, HTMLTabCtrl;
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -58,24 +58,24 @@ System.register(['./aceEditorCtrl'], function (_export, _context) {
         };
       }();
 
-      OptionsTabCtrl = function (_AceEditorCtrl) {
-        _inherits(OptionsTabCtrl, _AceEditorCtrl);
+      HTMLTabCtrl = function (_AceEditorCtrl) {
+        _inherits(HTMLTabCtrl, _AceEditorCtrl);
 
-        function OptionsTabCtrl($scope, $injector, $rootScope, templateSrv) {
-          _classCallCheck(this, OptionsTabCtrl);
+        function HTMLTabCtrl($scope, $injector, $rootScope, templateSrv) {
+          _classCallCheck(this, HTMLTabCtrl);
 
-          return _possibleConstructorReturn(this, (OptionsTabCtrl.__proto__ || Object.getPrototypeOf(OptionsTabCtrl)).call(this, $scope, $injector, $rootScope, templateSrv));
+          return _possibleConstructorReturn(this, (HTMLTabCtrl.__proto__ || Object.getPrototypeOf(HTMLTabCtrl)).call(this, $scope, $injector, $rootScope, templateSrv));
         }
 
-        _createClass(OptionsTabCtrl, [{
+        _createClass(HTMLTabCtrl, [{
           key: 'setValue',
           value: function setValue(val) {
-            this.panel.eoptions = val;
+            this.panel.html = val;
           }
         }, {
           key: 'getValue',
           value: function getValue() {
-            return this.panel.eoptions;
+            return this.panel.html;
           }
         }], [{
           key: 'buildDirective',
@@ -84,18 +84,18 @@ System.register(['./aceEditorCtrl'], function (_export, _context) {
               return {
                 restrict: 'E',
                 scope: true,
-                templateUrl: 'public/plugins/grafana-echart-panel/optionsTab.html',
-                controller: OptionsTabCtrl
+                templateUrl: 'public/plugins/grafana-echart-panel/htmlTab.html',
+                controller: HTMLTabCtrl
               };
             };
           }
         }]);
 
-        return OptionsTabCtrl;
+        return HTMLTabCtrl;
       }(AceEditorCtrl);
 
-      _export('default', OptionsTabCtrl);
+      _export('default', HTMLTabCtrl);
     }
   };
 });
-//# sourceMappingURL=optionsTab.js.map
+//# sourceMappingURL=htmlTab.js.map

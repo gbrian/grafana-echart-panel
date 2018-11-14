@@ -10,7 +10,6 @@ export default class EChartRendering {
   constructor(scope, elem, attrs, ctrl) {
     this.panel = ctrl.panel;
     this.elem = elem;
-    this.jchart = elem.find('.echart-panel__chart');
     this.ctrl = ctrl;
     this.scope = scope;
     this.init();
@@ -42,8 +41,6 @@ export default class EChartRendering {
   loadPlugins() {
     // TODO: Fix dependencies plugins load
     const plugins = [
-      { id: "highlitercss", src: "//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/styles/default.min.css" },
-      { id: "highliterjs", src: "//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/highlight.min.js" },
       { id: 'echarts', src: '/public/plugins/grafana-echart-panel/lib/echarts/echarts.min.js' },
       { id: 'liquidfill', src: '/public/plugins/grafana-echart-panel/lib/echarts/liquidfill.min.js' }
     ];
@@ -61,23 +58,59 @@ export default class EChartRendering {
   }
 
   addechart() {
-    var options = this.ctrl.getChartOptions();
-    this.initEchart();
-    this.echart.setOption(options, true);
-    this.echart.resize();
+    if(!this.initEchart()) return;
+    try{
+      var options = this.ctrl.getChartOptions();
+      this.echart.setOption(options, true);
+      this.echart.resize();
+      this.notify('echart-changed',
+                        {data:this.ctrl.data, echart:this.echart, options: options});
+    }catch(e){
+      console.error(e);
+    }
   }
 
   initEchart() {
-    if(!this.echart)
-      this.echart = echarts.init(this.jchart[0],
-        this.panel.theme, {
-          renderer: this.panel.renderer || 'canvas'
-        });
+    var jchart = this.elem.find('.echart-panel__chart');
+    if(!jchart.length){
+      return null;
+    }
+    if(!this.echart || !$(`[_echarts_instance_="${this.echart.id}"]`).length){
+        this.echart = echarts.init(jchart[0],
+          this.panel.theme, {
+            renderer: this.panel.renderer || 'canvas'
+          });
+      }
     return this.echart;
   }
 
   onRender() {
     this.render(false);
+  }
+
+  initMarkup(){
+    var markup = this.ctrl.getChartMarkup();
+    if(markup === this.lastMarkup)
+      return;
+    try{
+      var jmarkup = $(markup);
+      this.resetNotify('init-markup');
+      this.resetNotify('echart-changed');
+      this.elem.find('.echart-panel__html')
+        .empty()
+        .html(jmarkup);
+      this.notify('init-markup', {data:this.ctrl.data});
+      this.lastMarkup = markup;
+    }catch(e){
+      console.log(e);
+    }
+  }
+
+  resetNotify(type){
+    this.elem.off(type);
+  }
+  notify(type, data){
+    this.elem.trigger(type, data);
   }
 
   render(incrementRenderCounter) {
@@ -93,6 +126,7 @@ export default class EChartRendering {
     }
 
     this.clearWarning();
+    this.initMarkup();
     this.addechart();
 
     if (incrementRenderCounter) {

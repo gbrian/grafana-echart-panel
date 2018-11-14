@@ -42,7 +42,6 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
 
           this.panel = ctrl.panel;
           this.elem = elem;
-          this.jchart = elem.find('.echart-panel__chart');
           this.ctrl = ctrl;
           this.scope = scope;
           this.init();
@@ -79,7 +78,7 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
             var _this = this;
 
             // TODO: Fix dependencies plugins load
-            var plugins = [{ id: "highlitercss", src: "//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/styles/default.min.css" }, { id: "highliterjs", src: "//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/highlight.min.js" }, { id: 'echarts', src: '/public/plugins/grafana-echart-panel/lib/echarts/echarts.min.js' }, { id: 'liquidfill', src: '/public/plugins/grafana-echart-panel/lib/echarts/liquidfill.min.js' }];
+            var plugins = [{ id: 'echarts', src: '/public/plugins/grafana-echart-panel/lib/echarts/echarts.min.js' }, { id: 'liquidfill', src: '/public/plugins/grafana-echart-panel/lib/echarts/liquidfill.min.js' }];
             plugins.filter(function (p) {
               return $('#' + p.id).length === 0;
             }).map(function (p) {
@@ -100,23 +99,60 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
         }, {
           key: 'addechart',
           value: function addechart() {
-            var options = this.ctrl.getChartOptions();
-            this.initEchart();
-            this.echart.setOption(options, true);
-            this.echart.resize();
+            if (!this.initEchart()) return;
+            try {
+              var options = this.ctrl.getChartOptions();
+              this.echart.setOption(options, true);
+              this.echart.resize();
+              this.notify('echart-changed', { data: this.ctrl.data, echart: this.echart, options: options });
+            } catch (e) {
+              console.error(e);
+            }
           }
         }, {
           key: 'initEchart',
           value: function initEchart() {
-            if (!this.echart) this.echart = echarts.init(this.jchart[0], this.panel.theme, {
-              renderer: this.panel.renderer || 'canvas'
-            });
+            var jchart = this.elem.find('.echart-panel__chart');
+            if (!jchart.length) {
+              return null;
+            }
+            if (!this.echart || !$('[_echarts_instance_="' + this.echart.id + '"]').length) {
+              this.echart = echarts.init(jchart[0], this.panel.theme, {
+                renderer: this.panel.renderer || 'canvas'
+              });
+            }
             return this.echart;
           }
         }, {
           key: 'onRender',
           value: function onRender() {
             this.render(false);
+          }
+        }, {
+          key: 'initMarkup',
+          value: function initMarkup() {
+            var markup = this.ctrl.getChartMarkup();
+            if (markup === this.lastMarkup) return;
+            try {
+              var jmarkup = $(markup);
+              this.resetNotify('init-markup');
+              this.resetNotify('echart-changed');
+              this.elem.find('.echart-panel__html').empty().html(jmarkup);
+              this.notify('init-markup', { data: this.ctrl.data });
+              this.lastMarkup = markup;
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        }, {
+          key: 'resetNotify',
+          value: function resetNotify(type) {
+            this.elem.off(type);
+          }
+        }, {
+          key: 'notify',
+          value: function notify(type, data) {
+            this.elem.trigger(type, data);
           }
         }, {
           key: 'render',
@@ -135,6 +171,7 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
             }
 
             this.clearWarning();
+            this.initMarkup();
             this.addechart();
 
             if (incrementRenderCounter) {

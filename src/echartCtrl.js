@@ -5,6 +5,7 @@ import TimeSeries from 'app/core/time_series';
 import EChartRendering from './rendering';
 import OptionsTabCtrl from './optionsTab';
 import JSONPreviewCtrl from './jsonPreviewCtrl';
+import HTMLTabCtrl from './htmlTab';
 
 export class EChartCtrl extends MetricsPanelCtrl {
 
@@ -15,11 +16,6 @@ export class EChartCtrl extends MetricsPanelCtrl {
     this.templateSrv = templateSrv;
 
     var panelDefaults = {
-      pieType: 'pie',
-      legend: {
-        show: true, // disable/enable legend
-        values: true
-      },
       links: [],
       datasource: null,
       maxDataPoints: 3,
@@ -37,11 +33,14 @@ export class EChartCtrl extends MetricsPanelCtrl {
       combine: {
         threshold: 0.0,
         label: 'Others'
-      }
+      },
+      html: ['<div class="echart-panel__chart"></div>',
+              '<script> $("#$__panelId").one("init-markup", function(ev, data){}) </script>',
+              '<script> $("#$__panelId").one("echart-changed", function(ev, data){}) </script>'
+            ].join('\r\n')
     };
 
     _.defaults(this.panel, panelDefaults);
-    _.defaults(this.panel.legend, panelDefaults.legend);
 
     this.events.on('render', this.onRender.bind(this));
     this.events.on('data-received', this.onDataReceived.bind(this));
@@ -54,8 +53,9 @@ export class EChartCtrl extends MetricsPanelCtrl {
 
   onInitEditMode() {
     this.addEditorTab('Data preview', JSONPreviewCtrl.buildDirective(() => this.data), 2);
-    this.addEditorTab('Chart', OptionsTabCtrl.buildDirective(), 3);
-    this.addEditorTab('Options preview', JSONPreviewCtrl.buildDirective(() => this.getChartOptions()), 4);
+    this.addEditorTab('HTML', HTMLTabCtrl.buildDirective(), 3);
+    this.addEditorTab('Chart', OptionsTabCtrl.buildDirective(), 4);
+    this.addEditorTab('Options preview', JSONPreviewCtrl.buildDirective(() => this.getChartOptions()), 5);
     this.addEditorTab('Examples', 'public/plugins/grafana-echart-panel/examples.html');
     this.unitFormats = kbn.getUnitFormats();
   }
@@ -80,8 +80,13 @@ export class EChartCtrl extends MetricsPanelCtrl {
     // this.data = this.parseSeries(this.series);
   }
 
+  getChartMarkup(){
+    return this.replaceVariables(this.panel.html);
+  }
+
   getChartOptions(){
-    var fnc = new Function('data', `return ${this.panel.eoptions};`);
+    var eoptions = this.replaceVariables(this.panel.eoptions);
+    var fnc = new Function('data', `return ${eoptions};`);
     return fnc(this.data);
   }
 
@@ -168,6 +173,8 @@ export class EChartCtrl extends MetricsPanelCtrl {
 
   link(scope, elem, attrs, ctrl) {
     ctrl.elem = elem;
+    // Ensure we have a unique id
+    elem.attr('id', this.getPanelIdCSS());
     this.rendering = new EChartRendering(scope, elem, attrs, ctrl);
   }
 
@@ -190,6 +197,25 @@ export class EChartCtrl extends MetricsPanelCtrl {
     if (isIE11 && this.panel.legendType === 'Right side' && !this.panel.legend.sideWidth) {
       this.panel.legend.sideWidth = 150;
     }
+  }
+  getPanelIdCSS(){
+    return `panel_markup_${this.panel.id}`;
+  }
+  internalReplace(text){
+    return text.replace(/\$__[a-zA-Z0-9_]+/g, v =>{
+      switch(v){
+        case "$__panelId":
+          return this.getPanelIdCSS();
+      }
+      return v;
+    });
+  }
+  replaceVariables(text){
+    if(text){
+      text = this.internalReplace(text);
+      text = this.templateSrv.replace(text, this.panel.scopedVars);
+    }
+    return text;
   }
 }
 

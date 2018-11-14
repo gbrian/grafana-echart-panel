@@ -1,3 +1,7 @@
 .json-display{
   min-height: 400px;
 }
+
+.echart-panel__html, .echart-panel__chart{
+  height: 100%;
+}
