@@ -2,6 +2,7 @@ import {MetricsPanelCtrl} from 'app/plugins/sdk';
 import _ from 'lodash';
 import kbn from 'app/core/utils/kbn';
 import TimeSeries from 'app/core/time_series';
+import config from 'app/core/config';
 import EChartRendering from './rendering';
 import OptionsTabCtrl from './optionsTab';
 import JSONPreviewCtrl from './jsonPreviewCtrl';
@@ -18,7 +19,6 @@ export class EChartCtrl extends MetricsPanelCtrl {
     var panelDefaults = {
       links: [],
       datasource: null,
-      maxDataPoints: 3,
       interval: null,
       targets: [{}],
       cacheTimeout: null,
@@ -34,10 +34,11 @@ export class EChartCtrl extends MetricsPanelCtrl {
         threshold: 0.0,
         label: 'Others'
       },
-      html: ['<div class="echart-panel__chart"></div>',
+      html: ['<div id="$__panelId" class="echart-panel__chart"></div>',
               '<script> $("#$__panelId").one("init-markup", function(ev, data){}) </script>',
               '<script> $("#$__panelId").one("echart-changed", function(ev, data){}) </script>'
-            ].join('\r\n')
+            ].join('\r\n'),
+      echartError: ''
     };
 
     _.defaults(this.panel, panelDefaults);
@@ -49,6 +50,10 @@ export class EChartCtrl extends MetricsPanelCtrl {
     this.events.on('init-edit-mode', this.onInitEditMode.bind(this));
 
     this.setLegendWidthForLegacyBrowser();
+  }
+
+  getTheme(){
+    return config.bootData.user.lightTheme ? 'light': 'dark';
   }
 
   onInitEditMode() {
@@ -84,10 +89,19 @@ export class EChartCtrl extends MetricsPanelCtrl {
     return this.replaceVariables(this.panel.html);
   }
 
+  asset(url){
+    return `/public/plugins/grafana-echart-panel/lib/${url}`;
+  }
+
   getChartOptions(){
-    var eoptions = this.replaceVariables(this.panel.eoptions);
-    var fnc = new Function('data', `return ${eoptions};`);
-    return fnc(this.data);
+    try{
+      var eoptions = this.replaceVariables(this.panel.eoptions);
+      var fnc = new Function('data', 'asset', `return ${eoptions};`);
+      var res = fnc(this.data, this.asset.bind(this));
+      return (res && res.then) ? res: Promise.resolve(res);
+    }catch(e){
+      return Promise.reject(e);
+    }
   }
 
   parseSeries(series) {
@@ -173,8 +187,6 @@ export class EChartCtrl extends MetricsPanelCtrl {
 
   link(scope, elem, attrs, ctrl) {
     ctrl.elem = elem;
-    // Ensure we have a unique id
-    elem.attr('id', this.getPanelIdCSS());
     this.rendering = new EChartRendering(scope, elem, attrs, ctrl);
   }
 

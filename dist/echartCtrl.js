@@ -1,9 +1,9 @@
 'use strict';
 
-System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/time_series', './rendering', './optionsTab', './jsonPreviewCtrl', './htmlTab'], function (_export, _context) {
+System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/time_series', 'app/core/config', './rendering', './optionsTab', './jsonPreviewCtrl', './htmlTab'], function (_export, _context) {
   "use strict";
 
-  var MetricsPanelCtrl, _, kbn, TimeSeries, EChartRendering, OptionsTabCtrl, JSONPreviewCtrl, HTMLTabCtrl, _createClass, EChartCtrl;
+  var MetricsPanelCtrl, _, kbn, TimeSeries, config, EChartRendering, OptionsTabCtrl, JSONPreviewCtrl, HTMLTabCtrl, _createClass, EChartCtrl;
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -44,6 +44,8 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
       kbn = _appCoreUtilsKbn.default;
     }, function (_appCoreTime_series) {
       TimeSeries = _appCoreTime_series.default;
+    }, function (_appCoreConfig) {
+      config = _appCoreConfig.default;
     }, function (_rendering) {
       EChartRendering = _rendering.default;
     }, function (_optionsTab) {
@@ -87,7 +89,6 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           var panelDefaults = {
             links: [],
             datasource: null,
-            maxDataPoints: 3,
             interval: null,
             targets: [{}],
             cacheTimeout: null,
@@ -103,7 +104,8 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
               threshold: 0.0,
               label: 'Others'
             },
-            html: ['<div class="echart-panel__chart"></div>', '<script> $("#$__panelId").one("init-markup", function(ev, data){}) </script>', '<script> $("#$__panelId").one("echart-changed", function(ev, data){}) </script>'].join('\r\n')
+            html: ['<div id="$__panelId" class="echart-panel__chart"></div>', '<script> $("#$__panelId").one("init-markup", function(ev, data){}) </script>', '<script> $("#$__panelId").one("echart-changed", function(ev, data){}) </script>'].join('\r\n'),
+            echartError: ''
           };
 
           _.defaults(_this.panel, panelDefaults);
@@ -119,6 +121,11 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
         }
 
         _createClass(EChartCtrl, [{
+          key: 'getTheme',
+          value: function getTheme() {
+            return config.bootData.user.lightTheme ? 'light' : 'dark';
+          }
+        }, {
           key: 'onInitEditMode',
           value: function onInitEditMode() {
             var _this2 = this;
@@ -164,11 +171,21 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
             return this.replaceVariables(this.panel.html);
           }
         }, {
+          key: 'asset',
+          value: function asset(url) {
+            return '/public/plugins/grafana-echart-panel/lib/' + url;
+          }
+        }, {
           key: 'getChartOptions',
           value: function getChartOptions() {
-            var eoptions = this.replaceVariables(this.panel.eoptions);
-            var fnc = new Function('data', 'return ' + eoptions + ';');
-            return fnc(this.data);
+            try {
+              var eoptions = this.replaceVariables(this.panel.eoptions);
+              var fnc = new Function('data', 'asset', 'return ' + eoptions + ';');
+              var res = fnc(this.data, this.asset.bind(this));
+              return res && res.then ? res : Promise.resolve(res);
+            } catch (e) {
+              return Promise.reject(e);
+            }
           }
         }, {
           key: 'parseSeries',
@@ -264,8 +281,6 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           key: 'link',
           value: function link(scope, elem, attrs, ctrl) {
             ctrl.elem = elem;
-            // Ensure we have a unique id
-            elem.attr('id', this.getPanelIdCSS());
             this.rendering = new EChartRendering(scope, elem, attrs, ctrl);
           }
         }, {

@@ -1,9 +1,9 @@
 'use strict';
 
-System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jquery.json-editor.min'], function (_export, _context) {
+System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jquery.json-editor.min', 'app/core/core', 'd3'], function (_export, _context) {
   "use strict";
 
-  var _, $, _createClass, EChartRendering;
+  var _, $, appEvents, contextSrv, d3, _createClass, echart_panel__chart_class, EChartRendering;
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -16,7 +16,12 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
       _ = _lodash.default;
     }, function (_jquery) {
       $ = _jquery.default;
-    }, function (_jqueryFlot) {}, function (_jqueryFlotPie) {}, function (_libJqueryJsonEditorMin) {}],
+    }, function (_jqueryFlot) {}, function (_jqueryFlotPie) {}, function (_libJqueryJsonEditorMin) {}, function (_appCoreCore) {
+      appEvents = _appCoreCore.appEvents;
+      contextSrv = _appCoreCore.contextSrv;
+    }, function (_d) {
+      d3 = _d;
+    }],
     execute: function () {
       _createClass = function () {
         function defineProperties(target, props) {
@@ -36,6 +41,8 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
         };
       }();
 
+      echart_panel__chart_class = '.echart-panel__chart';
+
       EChartRendering = function () {
         function EChartRendering(scope, elem, attrs, ctrl) {
           _classCallCheck(this, EChartRendering);
@@ -53,9 +60,63 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
             this.ctrl.events.on('render', this.onRender.bind(this));
             try {
               this.loadPlugins();
+              // Shared crosshair and tooltip
+              appEvents.on('graph-hover', this.onGraphHover.bind(this), this.scope);
+              appEvents.on('graph-hover-clear', this.onGraphHoverClear.bind(this), this.scope);
             } catch (e) {
               console.error(e);
             }
+          }
+        }, {
+          key: 'onGraphHoverClear',
+          value: function onGraphHoverClear() {
+            this.clearCrosshair();
+          }
+        }, {
+          key: 'clearCrosshair',
+          value: function clearCrosshair() {
+            this.echart.dispatchAction({
+              type: 'hideTip'
+            });
+          }
+        }, {
+          key: 'sharesToolTip',
+          value: function sharesToolTip() {
+            return !!this.getTimeAxis();
+          }
+        }, {
+          key: 'getTimeAxis',
+          value: function getTimeAxis() {
+            return this.echart.getOption().xAxis.filter(function (x) {
+              return x.type === "time";
+            })[0];
+          }
+        }, {
+          key: 'onGraphHover',
+          value: function onGraphHover(event) {
+            // ignore other graph hover events if shared tooltip is disabled
+            if (this.sharesToolTip() && !this.ctrl.dashboard.sharedTooltipModeEnabled()) {
+              return;
+            }
+
+            // ignore if we are the emitter
+            if (event.panel.id === this.panel.id || this.ctrl.otherPanelInFullscreenMode()) {
+              return;
+            }
+            if (this.ctrl.dashboard.graphTooltip !== 0) {
+              this.drawSharedCrosshair(event.pos);
+            }
+          }
+        }, {
+          key: 'drawSharedCrosshair',
+          value: function drawSharedCrosshair(pos) {
+            var posX = this.xScale(pos.x);
+            var posY = this.elem.offset().top + this.elem.height() * pos.panelRelY;
+            this.echart.dispatchAction({
+              type: 'showTip',
+              x: posX,
+              y: posY
+            });
           }
         }, {
           key: 'loadAsset',
@@ -78,7 +139,7 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
             var _this = this;
 
             // TODO: Fix dependencies plugins load
-            var plugins = [{ id: 'echarts', src: '/public/plugins/grafana-echart-panel/lib/echarts/echarts.min.js' }, { id: 'liquidfill', src: '/public/plugins/grafana-echart-panel/lib/echarts/liquidfill.min.js' }];
+            var plugins = [{ id: 'echarts', src: '/public/plugins/grafana-echart-panel/lib/echarts/echarts.min.js' }, { id: 'liquidfill', src: '/public/plugins/grafana-echart-panel/lib/echarts/liquidfill.min.js' }, { id: 'zrender', src: '/public/plugins/grafana-echart-panel/lib/echarts/zrender.min.js' }, { id: 'claygl', src: '/public/plugins/grafana-echart-panel/lib/echarts/claygl.min.js' }, { id: 'echarts-gl', src: '/public/plugins/grafana-echart-panel/lib/echarts/echarts-gl.min.js' }];
             plugins.filter(function (p) {
               return $('#' + p.id).length === 0;
             }).map(function (p) {
@@ -99,25 +160,32 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
         }, {
           key: 'addechart',
           value: function addechart() {
+            var _this2 = this;
+
             if (!this.initEchart()) return;
-            try {
-              var options = this.ctrl.getChartOptions();
-              this.echart.setOption(options, true);
-              this.echart.resize();
-              this.notify('echart-changed', { data: this.ctrl.data, echart: this.echart, options: options });
-            } catch (e) {
+            this.ctrl.getChartOptions().then(function (options) {
+              if (!options) return;
+              _this2.echart.setOption(options, true);
+              _this2.echart.resize();
+              _this2.xScale = d3.scaleTime().domain([_this2.ctrl.range.from, _this2.ctrl.range.to]).range([0, _this2.echart.getWidth()]);
+              _this2.notify('echart-changed', { data: _this2.ctrl.data, echart: _this2.echart, options: options });
+              _this2.panel.echartError = "";
+            }).catch(function (e) {
               console.error(e);
-            }
+              _this2.panel.echartError = e.toString() + '\r' + e.stack;
+            });
+            this.elem.find('.echart-error').text(this.panel.echartError);
           }
         }, {
           key: 'initEchart',
           value: function initEchart() {
-            var jchart = this.elem.find('.echart-panel__chart');
+            var markupDom = this.markupDom();
+            var jchart = markupDom.is(echart_panel__chart_class) ? markupDom : markupDom.find(echart_panel__chart_class);
             if (!jchart.length) {
               return null;
             }
             if (!this.echart || !$('[_echarts_instance_="' + this.echart.id + '"]').length) {
-              this.echart = echarts.init(jchart[0], this.panel.theme, {
+              this.echart = echarts.init(jchart[0], this.ctrl.getTheme(), {
                 renderer: this.panel.renderer || 'canvas'
               });
             }
@@ -145,19 +213,24 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
             }
           }
         }, {
+          key: 'markupDom',
+          value: function markupDom() {
+            return $('#' + this.ctrl.getPanelIdCSS());
+          }
+        }, {
           key: 'resetNotify',
           value: function resetNotify(type) {
-            this.elem.off(type);
+            this.markupDom().off(type);
           }
         }, {
           key: 'notify',
           value: function notify(type, data) {
-            this.elem.trigger(type, data);
+            this.markupDom().trigger(type, data);
           }
         }, {
           key: 'render',
           value: function render(incrementRenderCounter) {
-            var _this2 = this;
+            var _this3 = this;
 
             if (!this.ctrl.data || !this.ctrl.data.raw.length) {
               this.noDataPoints();
@@ -165,7 +238,7 @@ System.register(['lodash', 'jquery', 'jquery.flot', 'jquery.flot.pie', './lib/jq
             }
             if (echarts === undefined || echarts.init === undefined) {
               setTimeout(function () {
-                return _this2.render(incrementRenderCounter);
+                return _this3.render(incrementRenderCounter);
               }, 500);
               return;
             }
