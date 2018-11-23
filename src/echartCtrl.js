@@ -128,6 +128,9 @@ export class EChartCtrl extends MetricsPanelCtrl {
   }
 
   seriesHandler(seriesData) {
+    if(!seriesData.datapoints) 
+      return [];
+
     var series = new TimeSeries({
       datapoints: seriesData.datapoints,
       alias: seriesData.target
