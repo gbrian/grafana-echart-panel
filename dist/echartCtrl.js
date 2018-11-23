@@ -217,6 +217,8 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
         }, {
           key: 'seriesHandler',
           value: function seriesHandler(seriesData) {
+            if (!seriesData.datapoints) return [];
+
             var series = new TimeSeries({
               datapoints: seriesData.datapoints,
               alias: seriesData.target
