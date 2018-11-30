@@ -116,8 +116,8 @@ export class EChartCtrl extends MetricsPanelCtrl {
   }
 
   onDataReceived(dataList) {
-    var series = dataList.map(this.seriesHandler.bind(this));
-    var parsed = series ? this.parseSeries(series):[];
+    var series = dataList.map(this.seriesHandler.bind(this)).filter(r => r);
+    var parsed = series.length ? this.parseSeries(series):[];
     this.data = {
         raw: dataList,
         series: series,

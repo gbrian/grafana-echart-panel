@@ -204,8 +204,10 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
         }, {
           key: 'onDataReceived',
           value: function onDataReceived(dataList) {
-            var series = dataList.map(this.seriesHandler.bind(this));
-            var parsed = series ? this.parseSeries(series) : [];
+            var series = dataList.map(this.seriesHandler.bind(this)).filter(function (r) {
+              return r;
+            });
+            var parsed = series.length ? this.parseSeries(series) : [];
             this.data = {
               raw: dataList,
               series: series,
