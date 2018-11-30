@@ -205,7 +205,7 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           key: 'onDataReceived',
           value: function onDataReceived(dataList) {
             var series = dataList.map(this.seriesHandler.bind(this));
-            var parsed = this.parseSeries(series);
+            var parsed = series ? this.parseSeries(series) : [];
             this.data = {
               raw: dataList,
               series: series,
@@ -217,7 +217,7 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
         }, {
           key: 'seriesHandler',
           value: function seriesHandler(seriesData) {
-            if (!seriesData.datapoints) return [];
+            if (!seriesData.datapoints) return null;
 
             var series = new TimeSeries({
               datapoints: seriesData.datapoints,

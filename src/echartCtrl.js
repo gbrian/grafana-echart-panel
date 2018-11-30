@@ -117,7 +117,7 @@ export class EChartCtrl extends MetricsPanelCtrl {
 
   onDataReceived(dataList) {
     var series = dataList.map(this.seriesHandler.bind(this));
-    var parsed = this.parseSeries(series);
+    var parsed = series ? this.parseSeries(series):[];
     this.data = {
         raw: dataList,
         series: series,
@@ -129,7 +129,7 @@ export class EChartCtrl extends MetricsPanelCtrl {
 
   seriesHandler(seriesData) {
     if(!seriesData.datapoints) 
-      return [];
+      return null;
 
     var series = new TimeSeries({
       datapoints: seriesData.datapoints,
