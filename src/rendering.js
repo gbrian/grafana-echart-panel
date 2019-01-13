@@ -158,6 +158,7 @@ export default class EChartRendering {
     try {
       var jmarkup = $(markup);
       this.resetNotify('init-markup');
+      this.resetNotify('data-changed');
       this.resetNotify('echart-changed');
       this.elem.find('.echart-panel__html')
         .empty()
@@ -193,6 +194,7 @@ export default class EChartRendering {
 
     this.clearWarning();
     this.initMarkup();
+    this.notify('data-changed', { data: this.ctrl.data });
     this.addechart();
 
     if (incrementRenderCounter) {

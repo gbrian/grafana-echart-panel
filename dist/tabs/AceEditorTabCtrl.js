@@ -3,7 +3,7 @@
 System.register(['./aceEditorCtrl'], function (_export, _context) {
   "use strict";
 
-  var AceEditorCtrl, _createClass, HTMLTabCtrl;
+  var AceEditorCtrl, _createClass, AceEditorTabCtrl;
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -58,44 +58,56 @@ System.register(['./aceEditorCtrl'], function (_export, _context) {
         };
       }();
 
-      HTMLTabCtrl = function (_AceEditorCtrl) {
-        _inherits(HTMLTabCtrl, _AceEditorCtrl);
+      AceEditorTabCtrl = function (_AceEditorCtrl) {
+        _inherits(AceEditorTabCtrl, _AceEditorCtrl);
 
-        function HTMLTabCtrl($scope, $injector, $rootScope, templateSrv) {
-          _classCallCheck(this, HTMLTabCtrl);
+        function AceEditorTabCtrl($scope, $injector, $rootScope, templateSrv) {
+          _classCallCheck(this, AceEditorTabCtrl);
 
-          return _possibleConstructorReturn(this, (HTMLTabCtrl.__proto__ || Object.getPrototypeOf(HTMLTabCtrl)).call(this, $scope, $injector, $rootScope, templateSrv));
+          return _possibleConstructorReturn(this, (AceEditorTabCtrl.__proto__ || Object.getPrototypeOf(AceEditorTabCtrl)).call(this, $scope, $injector, $rootScope, templateSrv));
         }
 
-        _createClass(HTMLTabCtrl, [{
+        _createClass(AceEditorTabCtrl, [{
+          key: 'getDirective',
+          value: function getDirective() {
+            return this.$scope.editorTab.directiveFn();
+          }
+        }, {
           key: 'setValue',
           value: function setValue(val) {
-            this.panel.html = val;
+            this.getDirective().dataFnc(val);
           }
         }, {
           key: 'getValue',
           value: function getValue() {
-            return this.panel.html;
+            return this.getDirective().dataFnc();
+          }
+        }, {
+          key: 'getMode',
+          value: function getMode() {
+            return "ace/mode/" + this.getDirective().aceType;
           }
         }], [{
           key: 'buildDirective',
-          value: function buildDirective() {
+          value: function buildDirective(aceType, getset) {
             return function () {
               return {
+                aceType: aceType,
                 restrict: 'E',
                 scope: true,
-                templateUrl: 'public/plugins/grafana-echart-panel/htmlTab.html',
-                controller: HTMLTabCtrl
+                dataFnc: getset,
+                templateUrl: 'public/plugins/grafana-echart-panel/tabs/AceEditorTab.html',
+                controller: AceEditorTabCtrl
               };
             };
           }
         }]);
 
-        return HTMLTabCtrl;
+        return AceEditorTabCtrl;
       }(AceEditorCtrl);
 
-      _export('default', HTMLTabCtrl);
+      _export('default', AceEditorTabCtrl);
     }
   };
 });
-//# sourceMappingURL=htmlTab.js.map
+//# sourceMappingURL=AceEditorTabCtrl.js.map

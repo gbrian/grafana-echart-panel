@@ -4,9 +4,11 @@ import kbn from 'app/core/utils/kbn';
 import TimeSeries from 'app/core/time_series';
 import config from 'app/core/config';
 import EChartRendering from './rendering';
-import OptionsTabCtrl from './optionsTab';
-import JSONPreviewCtrl from './jsonPreviewCtrl';
-import HTMLTabCtrl from './htmlTab';
+import AceEditorTabCtrl from './tabs/AceEditorTabCtrl';
+import EChartOptions from './tabs/echarttpl';
+import HtmlTemplate from './tabs/htmltpl';
+import HtmlJSTemplate from './tabs/htmljstpl';
+import HtmlCSSTemplate from './tabs/csstpl';
 
 export class EChartCtrl extends MetricsPanelCtrl {
 
@@ -18,7 +20,7 @@ export class EChartCtrl extends MetricsPanelCtrl {
 
     var panelDefaults = {
       links: [],
-      datasource: null,
+      datasource: 'grafana',
       interval: null,
       targets: [{}],
       cacheTimeout: null,
@@ -34,10 +36,10 @@ export class EChartCtrl extends MetricsPanelCtrl {
         threshold: 0.0,
         label: 'Others'
       },
-      html: ['<div id="$__panelId" class="echart-panel__chart"></div>',
-              '<script> $("#$__panelId").one("init-markup", function(ev, data){}) </script>',
-              '<script> $("#$__panelId").one("echart-changed", function(ev, data){}) </script>'
-            ].join('\r\n'),
+      html: HtmlTemplate(),
+      htmlJS: HtmlJSTemplate(),
+      htmlCSS: HtmlCSSTemplate(),
+      eoptions: EChartOptions(),
       echartError: ''
     };
 
@@ -57,14 +59,54 @@ export class EChartCtrl extends MetricsPanelCtrl {
   }
 
   onInitEditMode() {
-    this.addEditorTab('Data preview', JSONPreviewCtrl.buildDirective(() => this.data), 2);
-    this.addEditorTab('HTML', HTMLTabCtrl.buildDirective(), 3);
-    this.addEditorTab('Chart', OptionsTabCtrl.buildDirective(), 4);
-    this.addEditorTab('Options preview', JSONPreviewCtrl.buildDirective(() => this.getChartOptions()), 5);
-    this.addEditorTab('Examples', 'public/plugins/grafana-echart-panel/examples.html');
+    var initTab = 2;
+    var tabs = [
+      ['Data', this.dataPreviewGetSet()],
+      ['HTML', this.htmlPreviewGetSet()],
+      ['JS', this.jsPreviewGetSet()],
+      ['CSS', this.cssPreviewGetSet()],
+      ['EChart options', this.optionsPreviewGetSet()]];
+    _.map(tabs,
+      (kv, ix) => this.addEditorTab(kv[0], kv[1], initTab+ix));
+
     this.unitFormats = kbn.getUnitFormats();
   }
 
+  dataPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('json', val => {
+        if(val !== undefined)
+          this.data = val;
+        return this.data;
+    });
+  }
+  htmlPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('html', val => {
+        if(val !== undefined)
+          this.panel.html = val;
+        return this.panel.html;
+    });
+  }
+  jsPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('javascript', val => {
+        if(val !== undefined)
+          this.panel.htmlJS = val;
+        return this.panel.htmlJS;
+    });
+  }
+  cssPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('css', val => {
+        if(val !== undefined)
+          this.panel.htmlCSS = val;
+        return this.panel.htmlCSS;
+    });
+  }
+  optionsPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('css', val => {
+        if(val !== undefined)
+          this.panel.eoptions = val;
+        return this.panel.eoptions;
+    });
+  }
   setUnitFormat(subItem) {
     this.panel.format = subItem.value;
     this.render();
@@ -116,15 +158,24 @@ export class EChartCtrl extends MetricsPanelCtrl {
   }
 
   onDataReceived(dataList) {
-    var series = dataList.map(this.seriesHandler.bind(this)).filter(r => r);
-    var parsed = series.length ? this.parseSeries(series):[];
+    var series = _.map(dataList, this.seriesHandler.bind(this))
+                    .filter(r => r);
+    var parsed = this.parseSeries(series);
     this.data = {
         raw: dataList,
         series: series,
-        parsed: parsed
+        parsed: parsed,
+        table: _.map(dataList, this.tableHandler.bind(this))
     };
     this.jsdata = JSON.stringify(this.data, null, 2);
     this.render(this.data);
+  }
+
+  tableHandler(seriesData){
+    if(!seriesData.columns)
+      return []
+    var columns = _.map(seriesData.columns, c => c.text);
+    return _.map(seriesData.rows, r => columns.reduce((acc, v, ix) => acc[v] = r[ix] ,{}));
   }
 
   seriesHandler(seriesData) {

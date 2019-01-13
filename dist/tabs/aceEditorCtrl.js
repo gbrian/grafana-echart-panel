@@ -41,10 +41,13 @@ System.register(['app/core/config'], function (_export, _context) {
         function AceEditorCtrl($scope, $injector, $rootScope, templateSrv) {
           _classCallCheck(this, AceEditorCtrl);
 
+          this.$scope = $scope;
           this.panelCtrl = $scope.ctrl;
           $scope.ctrl = this;
           this.panel = this.panelCtrl.panel;
           this.elem = this.panelCtrl.elem;
+          this.editor = null;
+          // undefined! this.beautify = ace.acequire("ace/ext/beautify");
           this.renderChartOptions();
         }
 
@@ -76,23 +79,33 @@ System.register(['app/core/config'], function (_export, _context) {
             });
           }
         }, {
+          key: 'getMode',
+          value: function getMode() {
+            return "ace/mode/json";
+          }
+        }, {
+          key: 'formatCode',
+          value: function formatCode() {
+            this.beautify(this.editor.session);
+          }
+        }, {
           key: 'renderChartOptions',
           value: function renderChartOptions() {
             var _this = this;
 
             this.loadAutocomplete();
-            var jdata = this.elem.find('.json-ace-editor');
+            var jdata = this.elem.find('.ace-editor');
             if (jdata.length === 0 || jdata.children().length !== 0) {
               return;
             }
-            var editor = ace.edit(jdata[0]);
+            var editor = this.editor = ace.edit(jdata[0]);
             editor.setOptions({
               enableBasicAutocompletion: true,
               enableSnippets: true,
               enableLiveAutocompletion: true
             });
             var session = editor.getSession();
-            session.setMode("ace/mode/json");
+            session.setMode(this.getMode());
             session.setTabSize(2);
             session.setUseWrapMode(true);
             var tout = null;
