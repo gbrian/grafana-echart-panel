@@ -5,10 +5,6 @@ export default class AceEditorTabCtrl  extends AceEditorCtrl{
     super($scope, $injector, $rootScope, templateSrv);
   }
 
-  getDirective(){
-    return this.$scope.editorTab.directiveFn();
-  }
-
   setValue(val){
     this.getDirective().dataFnc(val);
   }
@@ -21,7 +17,7 @@ export default class AceEditorTabCtrl  extends AceEditorCtrl{
     return "ace/mode/" + this.getDirective().aceType;
   }
 
-  static buildDirective(aceType, getset) {
+  static buildDirective(aceType, getset, init) {
     return () => ({
       aceType: aceType,
       restrict: 'E',
@@ -29,6 +25,7 @@ export default class AceEditorTabCtrl  extends AceEditorCtrl{
       dataFnc: getset,
       templateUrl: 'public/plugins/grafana-echart-panel/tabs/AceEditorTab.html',
       controller: AceEditorTabCtrl,
+      init: init
     });
   }
 }

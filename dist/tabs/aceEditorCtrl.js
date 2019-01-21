@@ -47,11 +47,22 @@ System.register(['app/core/config'], function (_export, _context) {
           this.panel = this.panelCtrl.panel;
           this.elem = this.panelCtrl.elem;
           this.editor = null;
-          // undefined! this.beautify = ace.acequire("ace/ext/beautify");
+          this.beautify = ace.acequire("ace/ext/beautify");
           this.renderChartOptions();
         }
 
         _createClass(AceEditorCtrl, [{
+          key: 'getDirective',
+          value: function getDirective() {
+            return this.$scope.editorTab.directiveFn();
+          }
+        }, {
+          key: 'init',
+          value: function init(editor, session) {
+            var _initf = this.getDirective().init;
+            _initf && _initf(editor, session);
+          }
+        }, {
           key: 'loadAutocomplete',
           value: function loadAutocomplete() {
             var lnTools = ace.acequire('ace/ext/language_tools');
@@ -121,6 +132,7 @@ System.register(['app/core/config'], function (_export, _context) {
             var value = this.getValue();
             value && editor.setValue(value);
             this.setThemeMode(editor);
+            this.init(editor, session);
           }
         }, {
           key: 'setThemeMode',

@@ -20,9 +20,7 @@ export class EChartCtrl extends MetricsPanelCtrl {
 
     var panelDefaults = {
       links: [],
-      datasource: 'grafana',
       interval: null,
-      targets: [{}],
       cacheTimeout: null,
       nullPointMode: 'connected',
       legendType: 'Under graph',
@@ -44,7 +42,7 @@ export class EChartCtrl extends MetricsPanelCtrl {
     };
 
     _.defaults(this.panel, panelDefaults);
-
+    
     this.events.on('render', this.onRender.bind(this));
     this.events.on('data-received', this.onDataReceived.bind(this));
     this.events.on('data-error', this.onDataError.bind(this));
@@ -75,9 +73,10 @@ export class EChartCtrl extends MetricsPanelCtrl {
   dataPreviewGetSet(){
     return AceEditorTabCtrl.buildDirective('json', val => {
         if(val !== undefined)
-          this.data = val;
-        return this.data;
-    });
+          this.data = JSON.parse(val);
+        return JSON.stringify(this.data, null, 2);
+    },
+    (editor, session) => session.foldAll(1));
   }
   htmlPreviewGetSet(){
     return AceEditorTabCtrl.buildDirective('html', val => {
@@ -101,7 +100,7 @@ export class EChartCtrl extends MetricsPanelCtrl {
     });
   }
   optionsPreviewGetSet(){
-    return AceEditorTabCtrl.buildDirective('css', val => {
+    return AceEditorTabCtrl.buildDirective('javascript', val => {
         if(val !== undefined)
           this.panel.eoptions = val;
         return this.panel.eoptions;
@@ -128,9 +127,12 @@ export class EChartCtrl extends MetricsPanelCtrl {
   }
 
   getChartMarkup(){
-    return this.replaceVariables(this.panel.html);
+    var markup = this.panel.html+
+                 `<script type="text/javascript">${this.panel.htmlJS}</script>`+
+                 `<style>${this.panel.htmlCSS}</style>`;
+    return this.replaceVariables(markup);
   }
-
+  
   asset(url){
     return `/public/plugins/grafana-echart-panel/lib/${url}`;
   }
@@ -138,8 +140,8 @@ export class EChartCtrl extends MetricsPanelCtrl {
   getChartOptions(){
     try{
       var eoptions = this.replaceVariables(this.panel.eoptions);
-      var fnc = new Function('data', 'asset', `return ${eoptions};`);
-      var res = fnc(this.data, this.asset.bind(this));
+      var fnc = new Function("return " + eoptions)();
+      var res = fnc.bind(this)(this.data, this.asset.bind(this));
       return (res && res.then) ? res: Promise.resolve(res);
     }catch(e){
       return Promise.reject(e);

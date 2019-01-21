@@ -92,9 +92,7 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
 
           var panelDefaults = {
             links: [],
-            datasource: 'grafana',
             interval: null,
-            targets: [{}],
             cacheTimeout: null,
             nullPointMode: 'connected',
             legendType: 'Under graph',
@@ -151,8 +149,10 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
             var _this3 = this;
 
             return AceEditorTabCtrl.buildDirective('json', function (val) {
-              if (val !== undefined) _this3.data = val;
-              return _this3.data;
+              if (val !== undefined) _this3.data = JSON.parse(val);
+              return JSON.stringify(_this3.data, null, 2);
+            }, function (editor, session) {
+              return session.foldAll(1);
             });
           }
         }, {
@@ -190,7 +190,7 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           value: function optionsPreviewGetSet() {
             var _this7 = this;
 
-            return AceEditorTabCtrl.buildDirective('css', function (val) {
+            return AceEditorTabCtrl.buildDirective('javascript', function (val) {
               if (val !== undefined) _this7.panel.eoptions = val;
               return _this7.panel.eoptions;
             });
@@ -222,7 +222,8 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
         }, {
           key: 'getChartMarkup',
           value: function getChartMarkup() {
-            return this.replaceVariables(this.panel.html);
+            var markup = this.panel.html + ('<script type="text/javascript">' + this.panel.htmlJS + '</script>') + ('<style>' + this.panel.htmlCSS + '</style>');
+            return this.replaceVariables(markup);
           }
         }, {
           key: 'asset',
@@ -234,8 +235,8 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           value: function getChartOptions() {
             try {
               var eoptions = this.replaceVariables(this.panel.eoptions);
-              var fnc = new Function('data', 'asset', 'return ' + eoptions + ';');
-              var res = fnc(this.data, this.asset.bind(this));
+              var fnc = new Function("return " + eoptions)();
+              var res = fnc.bind(this)(this.data, this.asset.bind(this));
               return res && res.then ? res : Promise.resolve(res);
             } catch (e) {
               return Promise.reject(e);

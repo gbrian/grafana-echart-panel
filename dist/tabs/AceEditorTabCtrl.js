@@ -68,11 +68,6 @@ System.register(['./aceEditorCtrl'], function (_export, _context) {
         }
 
         _createClass(AceEditorTabCtrl, [{
-          key: 'getDirective',
-          value: function getDirective() {
-            return this.$scope.editorTab.directiveFn();
-          }
-        }, {
           key: 'setValue',
           value: function setValue(val) {
             this.getDirective().dataFnc(val);
@@ -89,7 +84,7 @@ System.register(['./aceEditorCtrl'], function (_export, _context) {
           }
         }], [{
           key: 'buildDirective',
-          value: function buildDirective(aceType, getset) {
+          value: function buildDirective(aceType, getset, init) {
             return function () {
               return {
                 aceType: aceType,
@@ -97,7 +92,8 @@ System.register(['./aceEditorCtrl'], function (_export, _context) {
                 scope: true,
                 dataFnc: getset,
                 templateUrl: 'public/plugins/grafana-echart-panel/tabs/AceEditorTab.html',
-                controller: AceEditorTabCtrl
+                controller: AceEditorTabCtrl,
+                init: init
               };
             };
           }

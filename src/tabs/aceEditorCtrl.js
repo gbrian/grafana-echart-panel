@@ -10,8 +10,17 @@ export default class AceEditorCtrl {
     this.panel = this.panelCtrl.panel;
     this.elem = this.panelCtrl.elem;
     this.editor = null;
-    // undefined! this.beautify = ace.acequire("ace/ext/beautify");
+    this.beautify = ace.acequire("ace/ext/beautify");
     this.renderChartOptions();
+  }
+  
+  getDirective(){
+    return this.$scope.editorTab.directiveFn();
+  }
+
+  init(editor, session){
+    var _initf = this.getDirective().init;
+    _initf && _initf(editor, session);
   }
 
   loadAutocomplete(){
@@ -77,6 +86,7 @@ export default class AceEditorCtrl {
     var value = this.getValue();
     value && editor.setValue(value);
     this.setThemeMode(editor);
+    this.init(editor, session);
   }
 
   setThemeMode(editor) {
