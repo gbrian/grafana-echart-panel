@@ -48,12 +48,27 @@ export class EChartCtrl extends MetricsPanelCtrl {
     this.events.on('data-error', this.onDataError.bind(this));
     this.events.on('data-snapshot-load', this.onDataReceived.bind(this));
     this.events.on('init-edit-mode', this.onInitEditMode.bind(this));
+    this.events.on('init-panel-actions', this.onInitPanelActions.bind(this));
 
     this.setLegendWidthForLegacyBrowser();
   }
 
   getTheme(){
     return config.bootData.user.lightTheme ? 'light': 'dark';
+  }
+
+  onInitPanelActions(actions) {
+    actions.push({ text: 'Export CSV', click: 'ctrl.exportCsv()' });
+  }
+
+  exportCsv() {
+    const scope = this.$scope.$new(true);
+    scope.seriesList = this.data.series;
+    this.publishAppEvent('show-modal', {
+      templateHtml: '<export-data-modal data="seriesList"></export-data-modal>',
+      scope,
+      modalClass: 'modal--narrow',
+    });
   }
 
   onInitEditMode() {
