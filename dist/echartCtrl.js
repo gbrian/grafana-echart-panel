@@ -120,6 +120,7 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           _this.events.on('data-error', _this.onDataError.bind(_this));
           _this.events.on('data-snapshot-load', _this.onDataReceived.bind(_this));
           _this.events.on('init-edit-mode', _this.onInitEditMode.bind(_this));
+          _this.events.on('init-panel-actions', _this.onInitPanelActions.bind(_this));
 
           _this.setLegendWidthForLegacyBrowser();
           return _this;
@@ -129,6 +130,22 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           key: 'getTheme',
           value: function getTheme() {
             return config.bootData.user.lightTheme ? 'light' : 'dark';
+          }
+        }, {
+          key: 'onInitPanelActions',
+          value: function onInitPanelActions(actions) {
+            actions.push({ text: 'Export CSV', click: 'ctrl.exportCsv()' });
+          }
+        }, {
+          key: 'exportCsv',
+          value: function exportCsv() {
+            var scope = this.$scope.$new(true);
+            scope.seriesList = this.data.series;
+            this.publishAppEvent('show-modal', {
+              templateHtml: '<export-data-modal data="seriesList"></export-data-modal>',
+              scope: scope,
+              modalClass: 'modal--narrow'
+            });
           }
         }, {
           key: 'onInitEditMode',
