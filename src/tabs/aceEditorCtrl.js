@@ -4,11 +4,23 @@ import config from 'app/core/config';
 
 export default class AceEditorCtrl {
   constructor($scope, $injector, $rootScope, templateSrv) {
+    this.$scope = $scope;
     this.panelCtrl = $scope.ctrl;
     $scope.ctrl = this;
     this.panel = this.panelCtrl.panel;
     this.elem = this.panelCtrl.elem;
+    this.editor = null;
+    this.beautify = ace.acequire("ace/ext/beautify");
     this.renderChartOptions();
+  }
+  
+  getDirective(){
+    return this.$scope.editorTab.directiveFn();
+  }
+
+  init(editor, session){
+    var _initf = this.getDirective().init;
+    _initf && _initf(editor, session);
   }
 
   loadAutocomplete(){
@@ -37,20 +49,28 @@ export default class AceEditorCtrl {
     });
   }
 
+  getMode(){
+    return "ace/mode/json";
+  }
+
+  formatCode(){
+    this.beautify(this.editor.session);
+  }
+
   renderChartOptions() {
     this.loadAutocomplete();
-    var jdata = this.elem.find('.json-ace-editor');
+    var jdata = this.elem.find('.ace-editor');
     if (jdata.length === 0 || jdata.children().length !== 0) {
       return;
     }
-    var editor = ace.edit(jdata[0]);
+    var editor = this.editor = ace.edit(jdata[0]);
     editor.setOptions({
         enableBasicAutocompletion: true,
         enableSnippets: true,
         enableLiveAutocompletion: true
     });
     var session = editor.getSession();
-    session.setMode("ace/mode/json");
+    session.setMode(this.getMode());
     session.setTabSize(2);
     session.setUseWrapMode(true);
     var tout = null;
@@ -66,6 +86,7 @@ export default class AceEditorCtrl {
     var value = this.getValue();
     value && editor.setValue(value);
     this.setThemeMode(editor);
+    this.init(editor, session);
   }
 
   setThemeMode(editor) {

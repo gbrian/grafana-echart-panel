@@ -1,9 +1,9 @@
 'use strict';
 
-System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/time_series', 'app/core/config', './rendering', './optionsTab', './jsonPreviewCtrl', './htmlTab'], function (_export, _context) {
+System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/time_series', 'app/core/config', './rendering', './tabs/AceEditorTabCtrl', './tabs/echarttpl', './tabs/htmltpl', './tabs/htmljstpl', './tabs/csstpl'], function (_export, _context) {
   "use strict";
 
-  var MetricsPanelCtrl, _, kbn, TimeSeries, config, EChartRendering, OptionsTabCtrl, JSONPreviewCtrl, HTMLTabCtrl, _createClass, EChartCtrl;
+  var MetricsPanelCtrl, _, kbn, TimeSeries, config, EChartRendering, AceEditorTabCtrl, EChartOptions, HtmlTemplate, HtmlJSTemplate, HtmlCSSTemplate, _createClass, EChartCtrl;
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -48,12 +48,16 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
       config = _appCoreConfig.default;
     }, function (_rendering) {
       EChartRendering = _rendering.default;
-    }, function (_optionsTab) {
-      OptionsTabCtrl = _optionsTab.default;
-    }, function (_jsonPreviewCtrl) {
-      JSONPreviewCtrl = _jsonPreviewCtrl.default;
-    }, function (_htmlTab) {
-      HTMLTabCtrl = _htmlTab.default;
+    }, function (_tabsAceEditorTabCtrl) {
+      AceEditorTabCtrl = _tabsAceEditorTabCtrl.default;
+    }, function (_tabsEcharttpl) {
+      EChartOptions = _tabsEcharttpl.default;
+    }, function (_tabsHtmltpl) {
+      HtmlTemplate = _tabsHtmltpl.default;
+    }, function (_tabsHtmljstpl) {
+      HtmlJSTemplate = _tabsHtmljstpl.default;
+    }, function (_tabsCsstpl) {
+      HtmlCSSTemplate = _tabsCsstpl.default;
     }],
     execute: function () {
       _createClass = function () {
@@ -88,9 +92,7 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
 
           var panelDefaults = {
             links: [],
-            datasource: null,
             interval: null,
-            targets: [{}],
             cacheTimeout: null,
             nullPointMode: 'connected',
             legendType: 'Under graph',
@@ -104,7 +106,10 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
               threshold: 0.0,
               label: 'Others'
             },
-            html: ['<div id="$__panelId" class="echart-panel__chart"></div>', '<script> $("#$__panelId").one("init-markup", function(ev, data){}) </script>', '<script> $("#$__panelId").one("echart-changed", function(ev, data){}) </script>'].join('\r\n'),
+            html: HtmlTemplate(),
+            htmlJS: HtmlJSTemplate(),
+            htmlCSS: HtmlCSSTemplate(),
+            eoptions: EChartOptions(),
             echartError: ''
           };
 
@@ -115,6 +120,7 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           _this.events.on('data-error', _this.onDataError.bind(_this));
           _this.events.on('data-snapshot-load', _this.onDataReceived.bind(_this));
           _this.events.on('init-edit-mode', _this.onInitEditMode.bind(_this));
+          _this.events.on('init-panel-actions', _this.onInitPanelActions.bind(_this));
 
           _this.setLegendWidthForLegacyBrowser();
           return _this;
@@ -126,20 +132,85 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
             return config.bootData.user.lightTheme ? 'light' : 'dark';
           }
         }, {
+          key: 'onInitPanelActions',
+          value: function onInitPanelActions(actions) {
+            actions.push({ text: 'Export CSV', click: 'ctrl.exportCsv()' });
+          }
+        }, {
+          key: 'exportCsv',
+          value: function exportCsv() {
+            var scope = this.$scope.$new(true);
+            scope.seriesList = this.data.series;
+            this.publishAppEvent('show-modal', {
+              templateHtml: '<export-data-modal data="seriesList"></export-data-modal>',
+              scope: scope,
+              modalClass: 'modal--narrow'
+            });
+          }
+        }, {
           key: 'onInitEditMode',
           value: function onInitEditMode() {
             var _this2 = this;
 
-            this.addEditorTab('Data preview', JSONPreviewCtrl.buildDirective(function () {
-              return _this2.data;
-            }), 2);
-            this.addEditorTab('HTML', HTMLTabCtrl.buildDirective(), 3);
-            this.addEditorTab('Chart', OptionsTabCtrl.buildDirective(), 4);
-            this.addEditorTab('Options preview', JSONPreviewCtrl.buildDirective(function () {
-              return _this2.getChartOptions();
-            }), 5);
-            this.addEditorTab('Examples', 'public/plugins/grafana-echart-panel/examples.html');
+            var initTab = 2;
+            var tabs = [['Data', this.dataPreviewGetSet()], ['HTML', this.htmlPreviewGetSet()], ['JS', this.jsPreviewGetSet()], ['CSS', this.cssPreviewGetSet()], ['EChart options', this.optionsPreviewGetSet()]];
+            _.map(tabs, function (kv, ix) {
+              return _this2.addEditorTab(kv[0], kv[1], initTab + ix);
+            });
+
             this.unitFormats = kbn.getUnitFormats();
+          }
+        }, {
+          key: 'dataPreviewGetSet',
+          value: function dataPreviewGetSet() {
+            var _this3 = this;
+
+            return AceEditorTabCtrl.buildDirective('json', function (val) {
+              if (val !== undefined) _this3.data = JSON.parse(val);
+              return JSON.stringify(_this3.data, null, 2);
+            }, function (editor, session) {
+              return session.foldAll(1);
+            });
+          }
+        }, {
+          key: 'htmlPreviewGetSet',
+          value: function htmlPreviewGetSet() {
+            var _this4 = this;
+
+            return AceEditorTabCtrl.buildDirective('html', function (val) {
+              if (val !== undefined) _this4.panel.html = val;
+              return _this4.panel.html;
+            });
+          }
+        }, {
+          key: 'jsPreviewGetSet',
+          value: function jsPreviewGetSet() {
+            var _this5 = this;
+
+            return AceEditorTabCtrl.buildDirective('javascript', function (val) {
+              if (val !== undefined) _this5.panel.htmlJS = val;
+              return _this5.panel.htmlJS;
+            });
+          }
+        }, {
+          key: 'cssPreviewGetSet',
+          value: function cssPreviewGetSet() {
+            var _this6 = this;
+
+            return AceEditorTabCtrl.buildDirective('css', function (val) {
+              if (val !== undefined) _this6.panel.htmlCSS = val;
+              return _this6.panel.htmlCSS;
+            });
+          }
+        }, {
+          key: 'optionsPreviewGetSet',
+          value: function optionsPreviewGetSet() {
+            var _this7 = this;
+
+            return AceEditorTabCtrl.buildDirective('javascript', function (val) {
+              if (val !== undefined) _this7.panel.eoptions = val;
+              return _this7.panel.eoptions;
+            });
           }
         }, {
           key: 'setUnitFormat',
@@ -168,7 +239,8 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
         }, {
           key: 'getChartMarkup',
           value: function getChartMarkup() {
-            return this.replaceVariables(this.panel.html);
+            var markup = this.panel.html + ('<script type="text/javascript">' + this.panel.htmlJS + '</script>') + ('<style>' + this.panel.htmlCSS + '</style>');
+            return this.replaceVariables(markup);
           }
         }, {
           key: 'asset',
@@ -180,8 +252,8 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
           value: function getChartOptions() {
             try {
               var eoptions = this.replaceVariables(this.panel.eoptions);
-              var fnc = new Function('data', 'asset', 'return ' + eoptions + ';');
-              var res = fnc(this.data, this.asset.bind(this));
+              var fnc = new Function("return " + eoptions)();
+              var res = fnc.bind(this)(this.data, this.asset.bind(this));
               return res && res.then ? res : Promise.resolve(res);
             } catch (e) {
               return Promise.reject(e);
@@ -190,31 +262,45 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
         }, {
           key: 'parseSeries',
           value: function parseSeries(series) {
-            var _this3 = this;
+            var _this8 = this;
 
             return _.map(series, function (serie, i) {
               return {
                 label: serie.alias,
-                data: serie.stats[_this3.panel.valueName],
-                color: _this3.panel.aliasColors[serie.alias] || _this3.$rootScope.colors[i],
-                legendData: serie.stats[_this3.panel.valueName]
+                data: serie.stats[_this8.panel.valueName],
+                color: _this8.panel.aliasColors[serie.alias] || _this8.$rootScope.colors[i],
+                legendData: serie.stats[_this8.panel.valueName]
               };
             });
           }
         }, {
           key: 'onDataReceived',
           value: function onDataReceived(dataList) {
-            var series = dataList.map(this.seriesHandler.bind(this)).filter(function (r) {
+            var series = _.map(dataList, this.seriesHandler.bind(this)).filter(function (r) {
               return r;
             });
-            var parsed = series.length ? this.parseSeries(series) : [];
+            var parsed = this.parseSeries(series);
             this.data = {
               raw: dataList,
               series: series,
-              parsed: parsed
+              parsed: parsed,
+              table: _.map(dataList, this.tableHandler.bind(this))
             };
             this.jsdata = JSON.stringify(this.data, null, 2);
             this.render(this.data);
+          }
+        }, {
+          key: 'tableHandler',
+          value: function tableHandler(seriesData) {
+            if (!seriesData.columns) return [];
+            var columns = _.map(seriesData.columns, function (c) {
+              return c.text;
+            });
+            return _.map(seriesData.rows, function (r) {
+              return columns.reduce(function (acc, v, ix) {
+                return acc[v] = r[ix];
+              }, {});
+            });
           }
         }, {
           key: 'seriesHandler',
@@ -319,12 +405,12 @@ System.register(['app/plugins/sdk', 'lodash', 'app/core/utils/kbn', 'app/core/ti
         }, {
           key: 'internalReplace',
           value: function internalReplace(text) {
-            var _this4 = this;
+            var _this9 = this;
 
             return text.replace(/\$__[a-zA-Z0-9_]+/g, function (v) {
               switch (v) {
                 case "$__panelId":
-                  return _this4.getPanelIdCSS();
+                  return _this9.getPanelIdCSS();
               }
               return v;
             });

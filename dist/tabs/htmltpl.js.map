@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../src/tabs/htmltpl.js"],"names":[],"mappings":";;;;;uBAAe,YAAU;AACrB,eAAO,yDAAP;AACH,K","file":"htmltpl.js","sourcesContent":["export default function(){\n    return '<div id=\"$__panelId\" class=\"echart-panel__chart\"></div>';\n}"]}

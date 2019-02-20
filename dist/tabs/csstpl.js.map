@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../src/tabs/csstpl.js"],"names":[],"mappings":";;;;;uBAAe,YAAU;AACrB,eAAO,gDAAP;AACH,K","file":"csstpl.js","sourcesContent":["export default function(){\n    return '#$__panelId{\\r\\n\\t/*Your css style here*/\\r\\n}';\n}"]}

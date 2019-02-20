@@ -94,7 +94,8 @@ export default class EChartRendering {
       { id: 'liquidfill', src: '/public/plugins/grafana-echart-panel/lib/echarts/liquidfill.min.js' },
       { id: 'zrender', src: '/public/plugins/grafana-echart-panel/lib/echarts/zrender.min.js' },
       { id: 'claygl', src: '/public/plugins/grafana-echart-panel/lib/echarts/claygl.min.js' },
-      { id: 'echarts-gl', src: '/public/plugins/grafana-echart-panel/lib/echarts/echarts-gl.min.js' }
+      { id: 'echarts-gl', src: '/public/plugins/grafana-echart-panel/lib/echarts/echarts-gl.min.js' },
+      { id: 'moment', src: '/public/plugins/grafana-echart-panel/lib/moment.min.js'}
     ];
     plugins.filter(p => $(`#${p.id}`).length === 0)
       .map(p => this.loadAsset(p.id, p.src));
@@ -158,6 +159,7 @@ export default class EChartRendering {
     try {
       var jmarkup = $(markup);
       this.resetNotify('init-markup');
+      this.resetNotify('data-changed');
       this.resetNotify('echart-changed');
       this.elem.find('.echart-panel__html')
         .empty()
@@ -193,6 +195,7 @@ export default class EChartRendering {
 
     this.clearWarning();
     this.initMarkup();
+    this.notify('data-changed', { data: this.ctrl.data });
     this.addechart();
 
     if (incrementRenderCounter) {

@@ -4,9 +4,11 @@ import kbn from 'app/core/utils/kbn';
 import TimeSeries from 'app/core/time_series';
 import config from 'app/core/config';
 import EChartRendering from './rendering';
-import OptionsTabCtrl from './optionsTab';
-import JSONPreviewCtrl from './jsonPreviewCtrl';
-import HTMLTabCtrl from './htmlTab';
+import AceEditorTabCtrl from './tabs/AceEditorTabCtrl';
+import EChartOptions from './tabs/echarttpl';
+import HtmlTemplate from './tabs/htmltpl';
+import HtmlJSTemplate from './tabs/htmljstpl';
+import HtmlCSSTemplate from './tabs/csstpl';
 
 export class EChartCtrl extends MetricsPanelCtrl {
 
@@ -18,9 +20,7 @@ export class EChartCtrl extends MetricsPanelCtrl {
 
     var panelDefaults = {
       links: [],
-      datasource: null,
       interval: null,
-      targets: [{}],
       cacheTimeout: null,
       nullPointMode: 'connected',
       legendType: 'Under graph',
@@ -34,20 +34,21 @@ export class EChartCtrl extends MetricsPanelCtrl {
         threshold: 0.0,
         label: 'Others'
       },
-      html: ['<div id="$__panelId" class="echart-panel__chart"></div>',
-              '<script> $("#$__panelId").one("init-markup", function(ev, data){}) </script>',
-              '<script> $("#$__panelId").one("echart-changed", function(ev, data){}) </script>'
-            ].join('\r\n'),
+      html: HtmlTemplate(),
+      htmlJS: HtmlJSTemplate(),
+      htmlCSS: HtmlCSSTemplate(),
+      eoptions: EChartOptions(),
       echartError: ''
     };
 
     _.defaults(this.panel, panelDefaults);
-
+    
     this.events.on('render', this.onRender.bind(this));
     this.events.on('data-received', this.onDataReceived.bind(this));
     this.events.on('data-error', this.onDataError.bind(this));
     this.events.on('data-snapshot-load', this.onDataReceived.bind(this));
     this.events.on('init-edit-mode', this.onInitEditMode.bind(this));
+    this.events.on('init-panel-actions', this.onInitPanelActions.bind(this));
 
     this.setLegendWidthForLegacyBrowser();
   }
@@ -56,15 +57,70 @@ export class EChartCtrl extends MetricsPanelCtrl {
     return config.bootData.user.lightTheme ? 'light': 'dark';
   }
 
+  onInitPanelActions(actions) {
+    actions.push({ text: 'Export CSV', click: 'ctrl.exportCsv()' });
+  }
+
+  exportCsv() {
+    const scope = this.$scope.$new(true);
+    scope.seriesList = this.data.series;
+    this.publishAppEvent('show-modal', {
+      templateHtml: '<export-data-modal data="seriesList"></export-data-modal>',
+      scope,
+      modalClass: 'modal--narrow',
+    });
+  }
+
   onInitEditMode() {
-    this.addEditorTab('Data preview', JSONPreviewCtrl.buildDirective(() => this.data), 2);
-    this.addEditorTab('HTML', HTMLTabCtrl.buildDirective(), 3);
-    this.addEditorTab('Chart', OptionsTabCtrl.buildDirective(), 4);
-    this.addEditorTab('Options preview', JSONPreviewCtrl.buildDirective(() => this.getChartOptions()), 5);
-    this.addEditorTab('Examples', 'public/plugins/grafana-echart-panel/examples.html');
+    var initTab = 2;
+    var tabs = [
+      ['Data', this.dataPreviewGetSet()],
+      ['HTML', this.htmlPreviewGetSet()],
+      ['JS', this.jsPreviewGetSet()],
+      ['CSS', this.cssPreviewGetSet()],
+      ['EChart options', this.optionsPreviewGetSet()]];
+    _.map(tabs,
+      (kv, ix) => this.addEditorTab(kv[0], kv[1], initTab+ix));
+
     this.unitFormats = kbn.getUnitFormats();
   }
 
+  dataPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('json', val => {
+        if(val !== undefined)
+          this.data = JSON.parse(val);
+        return JSON.stringify(this.data, null, 2);
+    },
+    (editor, session) => session.foldAll(1));
+  }
+  htmlPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('html', val => {
+        if(val !== undefined)
+          this.panel.html = val;
+        return this.panel.html;
+    });
+  }
+  jsPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('javascript', val => {
+        if(val !== undefined)
+          this.panel.htmlJS = val;
+        return this.panel.htmlJS;
+    });
+  }
+  cssPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('css', val => {
+        if(val !== undefined)
+          this.panel.htmlCSS = val;
+        return this.panel.htmlCSS;
+    });
+  }
+  optionsPreviewGetSet(){
+    return AceEditorTabCtrl.buildDirective('javascript', val => {
+        if(val !== undefined)
+          this.panel.eoptions = val;
+        return this.panel.eoptions;
+    });
+  }
   setUnitFormat(subItem) {
     this.panel.format = subItem.value;
     this.render();
@@ -86,9 +142,12 @@ export class EChartCtrl extends MetricsPanelCtrl {
   }
 
   getChartMarkup(){
-    return this.replaceVariables(this.panel.html);
+    var markup = this.panel.html+
+                 `<script type="text/javascript">${this.panel.htmlJS}</script>`+
+                 `<style>${this.panel.htmlCSS}</style>`;
+    return this.replaceVariables(markup);
   }
-
+  
   asset(url){
     return `/public/plugins/grafana-echart-panel/lib/${url}`;
   }
@@ -96,8 +155,8 @@ export class EChartCtrl extends MetricsPanelCtrl {
   getChartOptions(){
     try{
       var eoptions = this.replaceVariables(this.panel.eoptions);
-      var fnc = new Function('data', 'asset', `return ${eoptions};`);
-      var res = fnc(this.data, this.asset.bind(this));
+      var fnc = new Function("return " + eoptions)();
+      var res = fnc.bind(this)(this.data, this.asset.bind(this));
       return (res && res.then) ? res: Promise.resolve(res);
     }catch(e){
       return Promise.reject(e);
@@ -116,15 +175,24 @@ export class EChartCtrl extends MetricsPanelCtrl {
   }
 
   onDataReceived(dataList) {
-    var series = dataList.map(this.seriesHandler.bind(this)).filter(r => r);
-    var parsed = series.length ? this.parseSeries(series):[];
+    var series = _.map(dataList, this.seriesHandler.bind(this))
+                    .filter(r => r);
+    var parsed = this.parseSeries(series);
     this.data = {
         raw: dataList,
         series: series,
-        parsed: parsed
+        parsed: parsed,
+        table: _.map(dataList, this.tableHandler.bind(this))
     };
     this.jsdata = JSON.stringify(this.data, null, 2);
     this.render(this.data);
+  }
+
+  tableHandler(seriesData){
+    if(!seriesData.columns)
+      return []
+    var columns = _.map(seriesData.columns, c => c.text);
+    return _.map(seriesData.rows, r => columns.reduce((acc, v, ix) => acc[v] = r[ix] ,{}));
   }
 
   seriesHandler(seriesData) {
