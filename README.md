@@ -1,5 +1,7 @@
 # grafana-echart-panel
 
+# !! Sorry new version merged, it's not backward compatible :( doc comming soon!
+
 Grafana plugin panel for echart graphs.
 
 ![screen shot](./src/img/screen_shot4.png)
