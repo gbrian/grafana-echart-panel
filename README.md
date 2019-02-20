@@ -1,6 +1,6 @@
 # grafana-echart-panel
 
-# !! Sorry new version merged, it's not backward compatible :( doc comming soon!
+# !! Sorry new version merged, it's not backward compatible :( doc coming soon!
 
 Grafana plugin panel for echart graphs.
 
